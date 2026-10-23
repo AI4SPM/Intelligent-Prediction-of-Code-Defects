@@ -1,30 +1,35 @@
 # Intelligent-Prediction-of-Code-Defects
 本项目面向软件质量管理场景，目标是通过代码缺陷预测模型识别高风险文件，为测试人员提供测试优先级建议，并将质量检查能力接入 CI/CD 流水线。系统不是传统静态扫描器，而是基于 Git 变更历史、代码规模、作者经验、模块演化等特征进行风险预测。
+This project is designed for software quality management. It employs a code defect prediction model to identify high-risk files, provides testers with recommendations on testing priorities, and integrates quality assessment capabilities into CI/CD pipelines. Unlike traditional static analysis tools, this system assesses risk based on factors such as Git change history, codebase size, author experience, and module evolution.
 
-
-## 1. 项目背景
-
+## 1. 项目背景 (Project Background)
 在持续集成和持续交付场景中，测试人员通常需要面对大量提交、文件变更和回归测试任务。如果所有文件都平均投入测试资源，容易造成两类问题：
-
 - 高风险代码没有被优先发现。
 - 低风险代码消耗了过多测试时间。
-
 本项目围绕“质量管理智能化”主题，构建了一个基于 Git 历史和代码度量特征的代码缺陷风险预测系统。系统通过训练缺陷预测模型，对目标 Git 仓库中的文件进行风险评分，并在 CI/CD 流水线中作为质量门禁，帮助测试人员优先定位高危代码。
-
 本系统不是传统静态漏洞扫描器。它不直接判断某一行代码是否存在确定 bug，而是根据文件的历史变更模式、复杂度、改动规模、Bug 修复频率和开发经验等特征，预测哪些文件更可能存在质量风险。
 
-## 2. 项目目标
+In continuous integration and continuous delivery (CI/CD) environments, testers often face a high volume of code commits, file modifications, and regression testing tasks. Allocating testing resources uniformly across all files can lead to two primary issues:
+- High-risk code may not be identified as a priority.
+- Low-risk code may consume a disproportionate amount of testing time.
+Focused on the theme of "intelligent quality management," this project develops a system for predicting code defect risks based on Git history and code metrics. By training a defect prediction model, the system assigns risk scores to files within a target Git repository. These scores serve as quality gates within the CI/CD pipeline, enabling testers to prioritize the identification of high-risk code.
+This system is not a traditional static vulnerability scanner. Rather than determining whether a specific line of code contains a definitive bug, it analyzes factors such as a file’s historical change patterns, complexity, scale of modifications, frequency of bug fixes, and the development experience associated with it, to predict which files are most likely to harbor quality risks.
 
+## 2. 项目目标 (Project Objectives)
 本项目目标包括：
-
 1. 从真实 Git 仓库中自动提取代码质量相关特征。
 2. 使用 MindSpore 训练代码缺陷预测模型。
 3. 对目标仓库输出文件级风险分数和高风险文件列表。
 4. 给出风险原因和测试/修复建议。
 5. 将模型检测能力集成进 CI/CD 流水线，形成自动化质量门禁。
+The objectives of this project include:
+1. Automatically extracting code quality-related features from actual Git repositories.
+2. Training a code defect prediction model using MindSpore.
+3. Generating file-level risk scores and a list of high-risk files for target repositories.
+4. Providing the rationale behind the identified risks, along with recommendations for testing or remediation.
+5. Integrating the model’s detection capabilities into CI/CD pipelines to establish automated quality gates.
 
-## 3. 总体系统流程
-
+## 3. 总体系统流程 (Overall System Workflow)
 ```mermaid
 flowchart TD
     A["开发者提交代码"] --> B["CI/CD 流水线触发"]
@@ -46,10 +51,31 @@ flowchart TD
     O -->|通过| P["CI 构建通过"]
     O -->|失败| Q["CI 构建失败，提示优先检查高风险文件"]
 ```
+```mermaid
+flowchart TD
+A["Developer submits code"] --> B["CI/CD pipeline triggered"]
+B --> C["Checkout full Git history"]
+C --> D["Feature extraction (feature_engineering.py)"]
+D --> E["Code features: complexity, NLOC, lines modified, churn, file age"]
+D --> F["Process features: bug-fix frequency, author experience, module experience, commit context"]
+E --> G["Feature mapping/compatibility (predict.py)"]
+F --> G
+G --> H["MindSpore defect prediction model"]
+H --> I["Output risk_score for each file change record"]
+I --> J["Aggregate file risk by file_path (max_risk_score)"]
+J --> K{"Exceeds artifact threshold?"}
+K -->|Yes| L["Mark as high-risk file"]
+K -->|No| M["Mark as low-risk/monitor"]
+L --> N["Generate quality report (JSON/Markdown)"]
+M --> N
+N --> O{"Quality gate passed?"}
+O -->|Passed| P["CI build passed"]
+O -->|Failed| Q["CI build failed; prompt to prioritize checking high-risk files"]
+```
 
-## 4. 特征工程设计
-
+## 4. 特征工程设计 (Feature Engineering Design)
 系统核心输入不是单纯的源码文本，而是 Git 历史和代码度量特征的组合。当前特征主要分为两类。
+The core input for the system is not merely source code text, but a combination of Git history and code metric features. The current features are primarily categorized into two types.
 
 ### 4.1 代码特征
 
